@@ -1,1 +1,2 @@
 9.17 周五 建库，简单矩阵乘，cuda-gdb，调用cublas。
+9.18 周六 使用profile工具。
