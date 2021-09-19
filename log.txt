@@ -1,2 +1,3 @@
 9.17 周五 建库，简单矩阵乘，cuda-gdb，调用cublas。
 9.18 周六 使用profile工具。
+9.19 为啥我做了tiling以后和naive方法的性能没有明显区别。。

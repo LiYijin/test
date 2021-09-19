@@ -36,20 +36,34 @@ __global__ void sgemm_v0(const float *A, const float *B, float *C, int M, int N,
     C[i*N+j] = sum;
   }
 }
-/*
+
 __global__ void sgemm_v1(const float *A, const float *B, float *C, int M, int N, int K)
 {
-  __shared__ mm[]
-  int j = blockIdx.x*blockDim.x + threadIdx.x;
-  int i = blockIdx.y*blockDim.y + threadIdx.y;
-  if(i<M && j<N){
-    float sum = 0;
-    for(int k=0;k<K;k++)
-      sum += A[i*K+k] * B[k*N+j];
-    C[i*N+j] = sum;
+  __shared__ float mm1[BLOCKDIM][BLOCKDIM];
+  __shared__ float mm2[BLOCKDIM][BLOCKDIM];
+  float sum=0;
+
+  #pragma unroll 4
+  for(int tileidx = 0;tileidx<K;tileidx += BLOCKDIM){
+    int iy = blockIdx.y * blockDim.y + threadIdx.y;
+    int ix = blockIdx.x*blockDim.x+threadIdx.x;
+    int j = tileidx + threadIdx.x;
+    if(iy<M && j<K)
+      mm1[threadIdx.y][threadIdx.x] = A[iy*K+j];
+    if(j<K && ix<N)
+      mm2[threadIdx.y][threadIdx.x] = B[j*N+ix];
+    __syncthreads();
+    #pragma unroll 4
+    for(int k=0;k<BLOCKDIM && k+tileidx<K;k++)
+      sum += mm1[threadIdx.y][k] * mm2[k][threadIdx.x];
+    __syncthreads();
   }
+  int i = blockIdx.y*blockDim.y+threadIdx.y;
+  int j = blockIdx.x*blockDim.x+threadIdx.x;
+  if(i<M && j<N)
+    C[(i)*N+(j)] = sum;
 }
-*/
+
 void gpu_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
 {
   dim3 block(BLOCKDIM,BLOCKDIM);
@@ -59,13 +73,13 @@ void gpu_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
   sgemm_v0<<<grid,block>>>(A,B,C,M,N,K);
   cudaDeviceSynchronize();
   tLast = cpuSecond()-tStart;
-  printf("gpu:%.6f\n",tLast*1000.0);
+  printf("gpuv0:%.6f\n",tLast*1000.0);
 
   tStart = cpuSecond();
   sgemm_v1<<<grid,block>>>(A,B,C,M,N,K);
   cudaDeviceSynchronize();
   tLast = cpuSecond()-tStart;
-  printf("gpu:%.6f\n",tLast*1000.0);
+  printf("gpuv1:%.6f\n",tLast*1000.0);
 }
 void cublas_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
 {
@@ -83,6 +97,7 @@ void cublas_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
       C, N);
   cudaDeviceSynchronize();
   double tLast = cpuSecond()-tStart;
+  printf("cublas:%.6f\n",tLast*1000.0);
   cublasDestroy(handle);
 }
 
@@ -90,7 +105,7 @@ void cublas_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
 int main(int argc,char **argv)
 {
   float *A,*B,*C,*C_ref;
-  int M=640,N=650,K=400;
+  int M=1000,N=1002,K=1700;
   if(argc==4){
     M = atoi(argv[1]);
     N = atoi(argv[2]);
@@ -110,13 +125,13 @@ int main(int argc,char **argv)
   CHECK(cudaMemcpy(A_d,A,M*K*sizeof(float),cudaMemcpyHostToDevice));
   CHECK(cudaMemcpy(B_d,B,K*N*sizeof(float),cudaMemcpyHostToDevice));
 
-  cpu_sgemm(A,B,C,M,N,K);
+  cpu_sgemm(A,B,C_ref,M,N,K);
 
   gpu_sgemm(A_d,B_d,C_d,M,N,K);
   CHECK(cudaMemcpy(C,C_d,M*N*sizeof(float),cudaMemcpyDeviceToHost));
 
   cublas_sgemm(A_d,B_d,C_d,M,N,K);
-  CHECK(cudaMemcpy(C_ref,C_d,M*N*sizeof(float),cudaMemcpyDeviceToHost));
+  //CHECK(cudaMemcpy(C_ref,C_d,M*N*sizeof(float),cudaMemcpyDeviceToHost));
   
   checkResult(C,C_ref,M*N);
 

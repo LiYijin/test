@@ -28,7 +28,7 @@
 void initialData(float* ip,int size,float val=1)
 {
   for(int i=0;i<size;i++)
-    ip[i]=rand()*1.0/RAND_MAX;
+    ip[i]=1;
 }
 
 void printMatrix(float * C,const int nx,const int ny)
@@ -52,7 +52,7 @@ void initDevice(int devNum)
 
 void checkResult(float * test,float * ref,const int N)
 {
-  double epsilon=1.0E-4;
+  double epsilon=1.0E-3;
   for(int i=0;i<N;i++){
     if(abs(test[i]-ref[i])/ref[i]>epsilon){
       printf("Results don\'t match!\n");

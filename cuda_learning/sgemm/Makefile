@@ -1,6 +1,6 @@
 TARGET=sgemm
 INCLUDES=-I../include/
-FLAGS=-g -G  -lcublas -O2
+FLAGS=  -lcublas -O2
 src=$(wildcard *.cu)
 
 all:t1
