@@ -64,6 +64,51 @@ __global__ void sgemm_v1(const float *A, const float *B, float *C, int M, int N,
     C[(i)*N+(j)] = sum;
 }
 
+#define UNROLLSIZE 4
+#define TILESIZE (BLOCKDIM*UNROLLSIZE)
+__global__ void sgemm_v2(const float *A, const float *B, float *C, int M, int N, int K)
+{
+  __shared__ float mm1[TILESIZE][TILESIZE];
+  __shared__ float mm2[TILESIZE][TILESIZE];
+
+  float sum[UNROLLSIZE][UNROLLSIZE]={{0}};
+  #pragma unroll 4
+  for(int tileidx = 0;tileidx<K;tileidx += TILESIZE){
+    #pragma unroll 4
+    for(int i2=0;i2<UNROLLSIZE;i2++){
+      #pragma unroll 4
+      for(int i1=0;i1<UNROLLSIZE;i1++){
+        int iy = (blockIdx.y * blockDim.y + threadIdx.y)*UNROLLSIZE+i1;
+        int ix = (blockIdx.x * blockDim.x + threadIdx.x)*UNROLLSIZE+i1;
+        int j = tileidx + threadIdx.x*UNROLLSIZE+i2;
+        if(iy<M && j<K)
+          mm1[threadIdx.y*UNROLLSIZE+i1][threadIdx.x*UNROLLSIZE+i2] = A[iy*K+j];
+        if(j<K && ix<N)
+          mm2[threadIdx.y*UNROLLSIZE+i1][threadIdx.x*UNROLLSIZE+i2] = B[j*N+ix];
+      }
+    }
+    __syncthreads();
+    #pragma unroll 4
+    for(int k=0;k<TILESIZE && k+tileidx<K;k++)
+      #pragma unroll 4
+      for(int i2=0;i2<UNROLLSIZE;i2++)
+        #pragma unroll 4
+        for(int i1=0;i1<UNROLLSIZE;i1++)
+          sum[i2][i1] += mm1[threadIdx.y*UNROLLSIZE+i1][k] * mm2[k][threadIdx.x*UNROLLSIZE+i2];
+    __syncthreads();
+  }
+  #pragma unroll 4
+  for(int i2=0;i2<UNROLLSIZE;i2++){
+    #pragma unroll 4
+    for(int i1=0;i1<UNROLLSIZE;i1++){
+      int i = (blockIdx.y*blockDim.y+threadIdx.y)*UNROLLSIZE+i2;
+      int j = (blockIdx.x*blockDim.x+threadIdx.x)*UNROLLSIZE+i1;
+      if(i<M && j<N)
+        C[(i)*N+(j)] = sum[i2][i1];
+    }
+  }
+}
+
 void gpu_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
 {
   dim3 block(BLOCKDIM,BLOCKDIM);
@@ -76,7 +121,7 @@ void gpu_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
   printf("gpuv0:%.6f\n",tLast*1000.0);
 
   tStart = cpuSecond();
-  sgemm_v1<<<grid,block>>>(A,B,C,M,N,K);
+  sgemm_v2<<<grid,block>>>(A,B,C,M,N,K);
   cudaDeviceSynchronize();
   tLast = cpuSecond()-tStart;
   printf("gpuv1:%.6f\n",tLast*1000.0);
@@ -105,7 +150,7 @@ void cublas_sgemm(const float *A, const float *B, float *C, int M, int N, int K)
 int main(int argc,char **argv)
 {
   float *A,*B,*C,*C_ref;
-  int M=1000,N=1002,K=1700;
+  int M=1000,N=1024,K=1700;
   if(argc==4){
     M = atoi(argv[1]);
     N = atoi(argv[2]);
