@@ -3,7 +3,7 @@ INCLUDES=-I../include/
 FLAGS=  -lcublas -O2
 src=$(wildcard *.cu)
 
-all:t1
+all: clean t1
 prof:t1
 	sudo /usr/local/cuda/bin/ncu --export proflog --force-overwrite --target-processes application-only \
 	 --kernel-regex-base function --launch-skip-before-match 0 --section ComputeWorkloadAnalysis \
@@ -16,3 +16,6 @@ prof:t1
 
 t1:$(src)
 	nvcc $(INCLUDES) $(FLAGS) $(src) -o t1
+
+clean:
+	rm t1
