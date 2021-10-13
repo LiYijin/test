@@ -28,7 +28,7 @@
 void initialData(float* ip,int size,float val=1)
 {
   for(int i=0;i<size;i++)
-    ip[i]=1;
+    ip[i]=rand()%2;
 }
 
 void printMatrix(float * C,const int nx,const int ny)
@@ -36,7 +36,7 @@ void printMatrix(float * C,const int nx,const int ny)
   printf("Matrix<%d,%d>:\n",nx,ny);
   for(int i=0;i<nx;i++){
     for(int j=0;j<ny;j++)
-      printf("%6f ",C[i*ny+j]);
+      printf("%.1f ",C[i*ny+j]);
     printf("\n");
   }
 }
@@ -50,17 +50,18 @@ void initDevice(int devNum)
   CHECK(cudaSetDevice(dev));
 }
 
-void checkResult(float * test,float * ref,const int N)
+int checkResult(float * test,float * ref,const int N)
 {
   double epsilon=1.0E-3;
   for(int i=0;i<N;i++){
     if(abs(test[i]-ref[i])/ref[i]>epsilon){
       printf("Results don\'t match!\n");
       printf("%f(test[%d] )!= %f(ref[%d])\n",test[i],i,ref[i],i);
-      return;
+      return 0;
     }
   }
   printf("Check result success!\n");
+  return 1;
 }
 
 #ifdef _WIN32
