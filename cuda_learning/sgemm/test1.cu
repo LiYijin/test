@@ -1,5 +1,5 @@
 
-__device__ __noinline__ void Convolution_float_float_float_cuda_Convolution_1341_block_kernel(float* input0, float* input1, float* output0, int thread_id, int block_id, char *shared_buffer)
+__device__ __forceinline__ void Convolution_float_float_float_cuda_Convolution_1341_block_kernel(float* input0, float* input1, float* output0, int thread_id, int block_id, char *shared_buffer)
 {
     if (thread_id >= 256){
         return;

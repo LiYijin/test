@@ -15,7 +15,7 @@ prof:t1
 	 --cache-control all --clock-control base --apply-rules yes  main_test
 
 	 sudo /usr/local/cuda/bin/ncu  --metrics smsp__sass_thread_inst_executed_op_fadd_pred_on.sum,smsp__sass_thread_inst_executed_op_fmul_pred_on.sum,smsp__sass_thread_inst_executed_op_ffma_pred_on.sum main_test
-
+	 sudo /usr/local/cuda/bin/ncu  --metrics smsp__sass_thread_inst_executed_op_dadd_pred_on.sum,smsp__sass_thread_inst_executed_op_dmul_pred_on.sum,smsp__sass_thread_inst_executed_op_dfma_pred_on.sum,smsp__sass_thread_inst_executed_op_hadd_pred_on.sum,smsp__sass_thread_inst_executed_op_hmul_pred_on.sum,smsp__sass_thread_inst_executed_op_hfma_pred_on.sum ./main_test
 t1:$(src)
 	nvcc $(INCLUDES) $(FLAGS) $(src) -o t1
 

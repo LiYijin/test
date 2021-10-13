@@ -1,0 +1,10 @@
+fused 时间35.62
+1. 直接拆开，blockDim不变： 3.74+23.74
+2. 直接拆开，blockDim改回原来的 2.12+23.86
+3. 把原来的复制过来 2.0410+12.879
+
+ncu  --metrics dram__bytes_write.sum.per_second,dram__bytes_read.sum.per_second,\
+smsp__sass_thread_inst_executed_op_dadd_pred_on.sum,\
+smsp__sass_thread_inst_executed_op_dmul_pred_on.sum,\
+smsp__sass_thread_inst_executed_op_dfma_pred_on.sum \
+--launch-count 1 ./main_test

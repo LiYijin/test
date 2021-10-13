@@ -1,0 +1,4 @@
+/home/chenyanfan/work/code/cuda_codegen/CMakeFiles/rebuild_cache.dir
+/home/chenyanfan/work/code/cuda_codegen/CMakeFiles/edit_cache.dir
+/home/chenyanfan/work/code/cuda_codegen/CMakeFiles/nnfusion_naive_rt.dir
+/home/chenyanfan/work/code/cuda_codegen/CMakeFiles/main_test.dir
